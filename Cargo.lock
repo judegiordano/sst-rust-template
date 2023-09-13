@@ -675,20 +675,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
 
 [[package]]
-name = "lambda"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "lambda-web",
- "lambda_http",
- "lambda_runtime 0.8.2",
- "serde",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "lambda-web"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1222,6 +1208,20 @@ checksum = "2538b18701741680e0322a2302176d3253a35388e2e62f172f64f4f16605f877"
 dependencies = [
  "libc",
  "windows-sys",
+]
+
+[[package]]
+name = "sst_example"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "lambda-web",
+ "lambda_http",
+ "lambda_runtime 0.8.2",
+ "serde",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

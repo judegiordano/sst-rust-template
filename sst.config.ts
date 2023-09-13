@@ -1,16 +1,16 @@
 import { SSTConfig } from 'sst'
-import { Api, Function, type StackContext } from 'sst/constructs'
+import { Function, type StackContext } from 'sst/constructs'
 
 function ApiStack({ stack }: StackContext) {
 	const api = new Function(stack, 'api', {
-		handler: 'handlers/api/main.rs',
+		handler: 'src/bin/handlers/api.rs',
 		url: {
 			cors: true
 		},
 		logRetention: 'one_week'
 	})
 	stack.addOutputs({
-		endpoint: api.url
+		function_url: api.url
 	})
 }
 
@@ -26,6 +26,8 @@ export default {
 			runtime: 'rust',
 			architecture: 'arm_64',
 			environment: {
+				STAGE: app.stage,
+				REGION: app.region
 			}
 		})
 		app.stack(ApiStack)

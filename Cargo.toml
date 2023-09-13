@@ -1,5 +1,5 @@
 [package]
-name = "lambda"
+name = "sst_example"
 version = "0.1.0"
 edition = "2021"
 
@@ -22,5 +22,5 @@ tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt"] }
 
 [[bin]]
-name = "main"
-path = "handlers/api/main.rs"
+name = "api"
+path = "src/bin/handlers/api.rs"
