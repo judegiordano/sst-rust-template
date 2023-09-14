@@ -29,13 +29,25 @@ jobs:
           profile: minimal
           override: true
 
+      - name: use Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.10.0
+
+      - name: use Cargo Lambda
+        uses: jaxxstorm/action-install-gh-release@v1.9.0
+        with:
+          repo: cargo-lambda/cargo-lambda
+          platform: linux
+          arch: x86_64 # | aarch64
+
       - name: pnpm install
         run: pnpm install --frozen-lockfile
 
       - name: sst build
-        run: pnpm build
+        run: pnpm build --stage prod
 
-      - name: Serverless Stack Deploy
+      - name: pnpm deploy
         run: |
           set -euxo pipefail
           pnpm sst deploy --stage prod

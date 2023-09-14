@@ -25,19 +25,19 @@ jobs:
           override: true
           components: clippy
 
+      - name: use nextest
+        uses: taiki-e/install-action@nextest
+
       - name: add clippy
         run: rustup component add clippy
 
       - name: pnpm install
         run: pnpm install --frozen-lockfile
 
-      - name: add nextest
-        uses: taiki-e/install-action@nextest
-
       - name: clippy lint
         run: cargo lint
 
-      - name: unit test
+      - name: cargo test
         run: cargo next-test
 
         env:
