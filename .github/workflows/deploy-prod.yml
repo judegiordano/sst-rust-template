@@ -1,0 +1,46 @@
+name: Deploy Prod
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-prod:
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: use pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: use Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.66.0
+          profile: minimal
+          override: true
+
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: sst build
+        run: pnpm build
+
+      - name: Serverless Stack Deploy
+        run: |
+          set -euxo pipefail
+          pnpm sst deploy --stage prod
+
+        env:
+          STAGE: prod
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

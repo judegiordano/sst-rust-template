@@ -1,0 +1,44 @@
+name: Run Tests
+
+on: push
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: use pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: use Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.66.0
+          profile: minimal
+          override: true
+          components: clippy
+
+      - name: add clippy
+        run: rustup component add clippy
+
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: add nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: clippy lint
+        run: cargo lint
+
+      - name: unit test
+        run: cargo next-test
+
+        env:
+          STAGE: test
