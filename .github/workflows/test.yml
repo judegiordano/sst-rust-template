@@ -12,11 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: use pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
       - name: use Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -30,9 +25,6 @@ jobs:
 
       - name: add clippy
         run: rustup component add clippy
-
-      - name: pnpm install
-        run: pnpm install --frozen-lockfile
 
       - name: clippy lint
         run: cargo lint

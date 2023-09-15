@@ -10,7 +10,7 @@ function ApiStack({ stack }: StackContext) {
 		logRetention: 'one_week'
 	})
 	stack.addOutputs({
-		function_url: api.url
+		url: api.url
 	})
 }
 
