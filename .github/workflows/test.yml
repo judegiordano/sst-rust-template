@@ -20,6 +20,9 @@ jobs:
           override: true
           components: clippy
 
+      - name: use Rust cache
+        uses: Swatinem/rust-cache@v2
+
       - name: use nextest
         uses: taiki-e/install-action@nextest
 

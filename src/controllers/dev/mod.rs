@@ -1,4 +1,4 @@
-use lambda_web::actix_web::web::{ServiceConfig, self};
+use lambda_web::actix_web::web::{self, ServiceConfig};
 
 mod controller;
 
