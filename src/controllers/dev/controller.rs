@@ -13,6 +13,6 @@ struct PingMessage {
 }
 
 pub async fn ping() -> ApiResponse {
-    let Env { stage, region } = config::Env::new()?;
+    let Env { stage, region, .. } = config::Env::new()?;
     Ok(HttpResponse::Ok().json(PingMessage { stage, region }))
 }

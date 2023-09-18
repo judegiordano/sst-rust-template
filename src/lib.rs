@@ -4,6 +4,7 @@ pub mod config {
     use std::env::VarError;
 
     use serde::{Deserialize, Serialize};
+    use tracing::Level;
 
     #[derive(Debug, Deserialize, Serialize)]
     pub enum Stage {
@@ -16,6 +17,7 @@ pub mod config {
     pub struct Env {
         pub stage: Stage,
         pub region: String,
+        pub log_level: Level,
     }
 
     impl Env {
@@ -28,6 +30,13 @@ pub mod config {
                     other => Stage::Other(other.to_string()),
                 },
                 region: std::env::var("REGION")?,
+                log_level: match std::env::var("LOG_LEVEL")?.to_uppercase().as_str() {
+                    "DEBUG" => Level::DEBUG,
+                    "INFO" => Level::INFO,
+                    "WARN" => Level::WARN,
+                    "ERROR" => Level::ERROR,
+                    _ => Level::ERROR,
+                },
             })
         }
     }
@@ -64,7 +73,7 @@ pub mod errors {
         }
 
         fn error_response(&self) -> HttpResponse<body::BoxBody> {
-            tracing::error!("{:?}", self);
+            tracing::error!("[ERROR]: {self:?}");
             let mut res = HttpResponse::new(self.status_code());
             res.headers_mut().insert(
                 http::header::CONTENT_TYPE,
@@ -73,5 +82,20 @@ pub mod errors {
             let error_raw = format!(r#"{{"error":"{self}"}}"#);
             res.set_body(body::BoxBody::new(error_raw))
         }
+    }
+}
+
+pub mod logger {
+    use tracing::Level;
+
+    use crate::config;
+
+    pub fn init() {
+        let log_level = config::Env::new().map_or(Level::ERROR, |e| e.log_level);
+        tracing_subscriber::fmt()
+            .with_max_level(log_level)
+            .with_target(false)
+            .without_time()
+            .init()
     }
 }
