@@ -29,7 +29,8 @@ export default {
 			timeout: 28,
 			environment: {
 				STAGE: app.stage,
-				REGION: app.region
+				REGION: app.region,
+				LOG_LEVEL: process.env.LOG_LEVEL
 			}
 		})
 		app.stack(ApiStack)
