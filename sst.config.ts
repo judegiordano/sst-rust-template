@@ -1,4 +1,4 @@
-import { SSTConfig } from 'sst'
+import { type SSTConfig } from 'sst'
 import { Function, type StackContext } from 'sst/constructs'
 
 function ApiStack({ stack }: StackContext) {
@@ -30,7 +30,7 @@ export default {
 			environment: {
 				STAGE: app.stage,
 				REGION: app.region,
-				LOG_LEVEL: process.env.LOG_LEVEL
+				LOG_LEVEL: process.env.LOG_LEVEL,
 			}
 		})
 		app.stack(ApiStack)
