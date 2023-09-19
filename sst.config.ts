@@ -31,6 +31,7 @@ export default {
 				STAGE: app.stage,
 				REGION: app.region,
 				LOG_LEVEL: process.env.LOG_LEVEL,
+				MONGO_URI: process.env.MONGO_URI,
 			}
 		})
 		app.stack(ApiStack)

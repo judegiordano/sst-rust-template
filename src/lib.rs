@@ -20,6 +20,7 @@ pub mod config {
         pub stage: Stage,
         pub region: String,
         pub log_level: Level,
+        pub mongo_uri: String,
     }
 
     impl Env {
@@ -39,6 +40,7 @@ pub mod config {
                     "ERROR" => Level::ERROR,
                     _ => Level::ERROR,
                 },
+                mongo_uri: std::env::var("MONGO_URI")?,
             })
         }
 
