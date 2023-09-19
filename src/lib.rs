@@ -6,6 +6,8 @@ pub mod config {
     use serde::{Deserialize, Serialize};
     use tracing::Level;
 
+    use crate::errors::AppError;
+
     #[derive(Debug, Deserialize, Serialize)]
     pub enum Stage {
         Local,
@@ -21,7 +23,7 @@ pub mod config {
     }
 
     impl Env {
-        pub fn new() -> Result<Self, VarError> {
+        pub fn _init() -> Result<Self, VarError> {
             Ok(Self {
                 stage: match std::env::var("STAGE")?.to_uppercase().as_str() {
                     "LOCAL" => Stage::Local,
@@ -39,6 +41,15 @@ pub mod config {
                 },
             })
         }
+
+        pub fn new() -> Result<Self, AppError> {
+            match Self::_init() {
+                Ok(env) => Ok(env),
+                Err(err) => Err(AppError::InternalServerError {
+                    error: Some(err.to_string()),
+                }),
+            }
+        }
     }
 }
 
@@ -47,7 +58,53 @@ pub mod errors {
 
     use lambda_http::http::{HeaderValue, StatusCode};
     use lambda_web::actix_web::{body, error, http, HttpResponse};
+    use thiserror::Error;
 
+    #[derive(Error, Debug)]
+    pub enum AppError {
+        #[error("{error:?}")]
+        Unauthorized { error: Option<String> },
+        #[error("{error:?}")]
+        InternalServerError { error: Option<String> },
+        #[error("{error:?}")]
+        NotFound { error: Option<String> },
+    }
+
+    impl error::ResponseError for AppError {
+        fn status_code(&self) -> StatusCode {
+            match self {
+                AppError::Unauthorized { error: _ } => StatusCode::UNAUTHORIZED,
+                AppError::InternalServerError { error: _ } => StatusCode::INTERNAL_SERVER_ERROR,
+                AppError::NotFound { error: _ } => StatusCode::NOT_FOUND,
+            }
+        }
+
+        fn error_response(&self) -> HttpResponse<body::BoxBody> {
+            tracing::error!("[ERROR]: {self:?}");
+            let mut res = HttpResponse::new(self.status_code());
+            res.headers_mut().insert(
+                http::header::CONTENT_TYPE,
+                HeaderValue::from_static("application/json"),
+            );
+            let message = match self {
+                AppError::Unauthorized { error } => error
+                    .as_ref()
+                    .map_or("unauthorized".to_string(), |e| e.to_string()),
+                AppError::InternalServerError { error } => error
+                    .as_ref()
+                    .map_or("internal server error".to_string(), |e| e.to_string()),
+                AppError::NotFound { error } => error
+                    .as_ref()
+                    .map_or("not found".to_string(), |e| e.to_string()),
+            };
+            let error_raw = format!(r#"{{"error":"{message}"}}"#);
+            res.set_body(body::BoxBody::new(error_raw))
+        }
+    }
+
+    pub type AppResponse = Result<HttpResponse, AppError>;
+
+    // THIS IS FOR MORE GENERIC ERRORS WITH ANYHOW
     #[derive(Debug)]
     pub struct ApiError(anyhow::Error);
     pub type ApiResponse = Result<HttpResponse, ApiError>;

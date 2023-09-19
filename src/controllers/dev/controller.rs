@@ -3,7 +3,7 @@ use serde::Serialize;
 
 use crate::{
     config::{self, Env, Stage},
-    errors::ApiResponse,
+    errors::AppResponse,
 };
 
 #[derive(Serialize)]
@@ -12,7 +12,7 @@ struct PingMessage {
     region: String,
 }
 
-pub async fn ping() -> ApiResponse {
+pub async fn ping() -> AppResponse {
     let Env { stage, region, .. } = config::Env::new()?;
     Ok(HttpResponse::Ok().json(PingMessage { stage, region }))
 }
