@@ -26,7 +26,7 @@ pub async fn ping() -> AppResponse {
 pub async fn create_record() -> ApiResponse {
     let now = DateTime::now();
     let new_record = Record {
-        payload: format!("request received: {}", now),
+        payload: format!("request received: {now}"),
         ..Default::default()
     };
     Ok(HttpResponse::Created().json(new_record.save().await?))

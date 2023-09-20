@@ -1,4 +1,9 @@
-use mongoose::{bson::DateTime, Model};
+use mongoose::{
+    bson::{doc, DateTime},
+    mongodb::{results::CreateIndexesResult, IndexModel},
+    types::MongooseError,
+    Model,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -20,3 +25,11 @@ impl Default for Record {
     }
 }
 impl Model for Record {}
+impl Record {
+    pub async fn migrate() -> Result<CreateIndexesResult, MongooseError> {
+        Self::create_indexes(&vec![IndexModel::builder()
+            .keys(doc! { "payload": 1, "created_at": -1 })
+            .build()])
+        .await
+    }
+}

@@ -13,6 +13,7 @@ lto = true          # enable link time optimization
 
 [dependencies]
 anyhow = "1.0.75"
+futures = "0.3.28"
 lambda-web = { version = "0.2.1", features = ["actix-web", "actix4"] }
 lambda_http = "0.8.1"
 lambda_runtime = "0.8.1"
@@ -25,6 +26,7 @@ tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = [
 	"fmt",
 ] }
+dotenv = "0.15.0"
 
 [[bin]]
 name = "api"
@@ -33,3 +35,7 @@ path = "src/bin/handlers/api.rs"
 [[bin]]
 name = "simple-function"
 path = "src/bin/handlers/simple-function.rs"
+
+[[bin]]
+name = "migrate-indexes"
+path = "src/bin/scripts/migrate-indexes.rs"

@@ -15,6 +15,6 @@ async fn handler(event: LambdaEvent<ExamplePayload>) -> Result<()> {
 
 #[tokio::main]
 pub async fn main() -> Result<(), lambda_http::Error> {
-    logger::init();
+    logger::init()?;
     run(service_fn(handler)).await
 }

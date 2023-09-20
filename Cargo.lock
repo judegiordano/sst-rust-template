@@ -1829,6 +1829,8 @@ name = "sst_example"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "dotenv",
+ "futures",
  "lambda-web",
  "lambda_http",
  "lambda_runtime 0.8.2",

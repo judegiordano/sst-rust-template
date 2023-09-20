@@ -17,6 +17,7 @@ pub mod config {
         Other(String),
     }
 
+    #[derive(Debug)]
     pub struct Env {
         pub stage: Stage,
         pub region: String,
@@ -26,6 +27,10 @@ pub mod config {
 
     impl Env {
         pub fn _init() -> Result<Self, VarError> {
+            if cfg!(debug_assertions) {
+                use dotenv::dotenv;
+                dotenv().ok();
+            }
             Ok(Self {
                 stage: match std::env::var("STAGE")?.to_uppercase().as_str() {
                     "LOCAL" => Stage::Local,
@@ -38,7 +43,6 @@ pub mod config {
                     "DEBUG" => Level::DEBUG,
                     "INFO" => Level::INFO,
                     "WARN" => Level::WARN,
-                    "ERROR" => Level::ERROR,
                     _ => Level::ERROR,
                 },
                 mongo_uri: std::env::var("MONGO_URI")?,
@@ -48,9 +52,12 @@ pub mod config {
         pub fn new() -> Result<Self, AppError> {
             match Self::_init() {
                 Ok(env) => Ok(env),
-                Err(err) => Err(AppError::InternalServerError {
-                    error: Some(err.to_string()),
-                }),
+                Err(err) => {
+                    eprintln!("error initializing env: {err:?}");
+                    Err(AppError::InternalServerError {
+                        error: Some(err.to_string()),
+                    })
+                }
             }
         }
     }
@@ -76,9 +83,9 @@ pub mod errors {
     impl error::ResponseError for AppError {
         fn status_code(&self) -> StatusCode {
             match self {
-                AppError::Unauthorized { error: _ } => StatusCode::UNAUTHORIZED,
-                AppError::InternalServerError { error: _ } => StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::NotFound { error: _ } => StatusCode::NOT_FOUND,
+                Self::Unauthorized { error: _ } => StatusCode::UNAUTHORIZED,
+                Self::InternalServerError { error: _ } => StatusCode::INTERNAL_SERVER_ERROR,
+                Self::NotFound { error: _ } => StatusCode::NOT_FOUND,
             }
         }
 
@@ -90,15 +97,16 @@ pub mod errors {
                 HeaderValue::from_static("application/json"),
             );
             let message = match self {
-                AppError::Unauthorized { error } => error
+                Self::Unauthorized { error } => error
                     .as_ref()
-                    .map_or("unauthorized".to_string(), |e| e.to_string()),
-                AppError::InternalServerError { error } => error
+                    .map_or("unauthorized".to_string(), std::string::ToString::to_string),
+                Self::InternalServerError { error } => error.as_ref().map_or(
+                    "internal server error".to_string(),
+                    std::string::ToString::to_string,
+                ),
+                Self::NotFound { error } => error
                     .as_ref()
-                    .map_or("internal server error".to_string(), |e| e.to_string()),
-                AppError::NotFound { error } => error
-                    .as_ref()
-                    .map_or("not found".to_string(), |e| e.to_string()),
+                    .map_or("not found".to_string(), std::string::ToString::to_string),
             };
             let error_raw = format!(r#"{{"error":"{message}"}}"#);
             res.set_body(body::BoxBody::new(error_raw))
@@ -147,15 +155,14 @@ pub mod errors {
 
 pub mod logger {
     use tracing::Level;
+    use tracing_subscriber::FmtSubscriber;
 
     use crate::config;
 
-    pub fn init() {
+    pub fn init() -> anyhow::Result<()> {
         let log_level = config::Env::new().map_or(Level::ERROR, |e| e.log_level);
-        tracing_subscriber::fmt()
-            .with_max_level(log_level)
-            .with_target(false)
-            .without_time()
-            .init()
+        let subscriber = FmtSubscriber::builder().with_max_level(log_level).finish();
+        tracing::subscriber::set_global_default(subscriber)?;
+        Ok(())
     }
 }
