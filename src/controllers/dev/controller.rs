@@ -1,6 +1,7 @@
 use lambda_web::actix_web::{web, HttpResponse};
 use mongoose::{
     bson::{doc, DateTime},
+    types::ListOptions,
     Model,
 };
 use serde::Serialize;
@@ -37,6 +38,13 @@ pub async fn read_record(id: web::Path<String>) -> ApiResponse {
 }
 
 pub async fn list_records() -> ApiResponse {
-    let records = Record::list(None, None).await?;
+    let records = Record::list(
+        None,
+        Some(ListOptions {
+            sort: Some(doc! { "created_at": -1 }),
+            ..Default::default()
+        }),
+    )
+    .await?;
     Ok(HttpResponse::Ok().json(records))
 }
