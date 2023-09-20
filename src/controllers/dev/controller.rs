@@ -1,9 +1,14 @@
-use lambda_web::actix_web::HttpResponse;
+use lambda_web::actix_web::{web, HttpResponse};
+use mongoose::{
+    bson::{doc, DateTime},
+    Model,
+};
 use serde::Serialize;
 
 use crate::{
     config::{self, Env, Stage},
-    errors::AppResponse,
+    errors::{ApiResponse, AppResponse},
+    models::record::Record,
 };
 
 #[derive(Serialize)]
@@ -15,4 +20,23 @@ struct PingMessage {
 pub async fn ping() -> AppResponse {
     let Env { stage, region, .. } = config::Env::new()?;
     Ok(HttpResponse::Ok().json(PingMessage { stage, region }))
+}
+
+pub async fn create_record() -> ApiResponse {
+    let now = DateTime::now();
+    let new_record = Record {
+        payload: format!("request received: {}", now),
+        ..Default::default()
+    };
+    Ok(HttpResponse::Created().json(new_record.save().await?))
+}
+
+pub async fn read_record(id: web::Path<String>) -> ApiResponse {
+    let record = Record::read_by_id(&id).await?;
+    Ok(HttpResponse::Ok().json(record))
+}
+
+pub async fn list_records() -> ApiResponse {
+    let records = Record::list(None, None).await?;
+    Ok(HttpResponse::Ok().json(records))
 }

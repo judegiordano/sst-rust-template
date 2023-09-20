@@ -16,6 +16,7 @@ anyhow = "1.0.75"
 lambda-web = { version = "0.2.1", features = ["actix-web", "actix4"] }
 lambda_http = "0.8.1"
 lambda_runtime = "0.8.1"
+mongoose = "0.1.16"
 serde = "1.0.188"
 serde_json = "1.0.107"
 thiserror = "1.0.48"

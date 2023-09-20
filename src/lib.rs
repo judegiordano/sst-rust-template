@@ -1,4 +1,5 @@
 pub mod controllers;
+pub mod models;
 
 pub mod config {
     use std::env::VarError;
