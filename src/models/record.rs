@@ -1,6 +1,8 @@
+use std::time::Duration;
+
 use mongoose::{
     bson::{doc, DateTime},
-    mongodb::{results::CreateIndexesResult, IndexModel},
+    mongodb::{options::IndexOptions, results::CreateIndexesResult, IndexModel},
     types::MongooseError,
     Model,
 };
@@ -14,6 +16,7 @@ pub struct Record {
     pub created_at: DateTime,
     pub updated_at: DateTime,
 }
+
 impl Default for Record {
     fn default() -> Self {
         Self {
@@ -24,12 +27,24 @@ impl Default for Record {
         }
     }
 }
+
 impl Model for Record {}
+
 impl Record {
     pub async fn migrate() -> Result<CreateIndexesResult, MongooseError> {
-        Self::create_indexes(&vec![IndexModel::builder()
-            .keys(doc! { "payload": 1, "created_at": -1 })
-            .build()])
+        Self::create_indexes(&vec![
+            IndexModel::builder()
+                .keys(doc! { "payload": 1, "created_at": -1 })
+                .build(),
+            IndexModel::builder()
+                .keys(doc! { "created_at": 1 })
+                .options(Some(
+                    IndexOptions::builder()
+                        .expire_after(Duration::from_secs(60))
+                        .build(),
+                ))
+                .build(),
+        ])
         .await
     }
 }
