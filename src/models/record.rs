@@ -1,12 +1,8 @@
+use mongoose::{doc, DateTime, IndexModel, IndexOptions, Model};
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use mongoose::{
-    bson::{doc, DateTime},
-    mongodb::{options::IndexOptions, results::CreateIndexesResult, IndexModel},
-    types::MongooseError,
-    Model,
-};
-use serde::{Deserialize, Serialize};
+use crate::errors::AppError;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Record {
@@ -31,8 +27,8 @@ impl Default for Record {
 impl Model for Record {}
 
 impl Record {
-    pub async fn migrate() -> Result<CreateIndexesResult, MongooseError> {
-        Self::create_indexes(&vec![
+    pub async fn migrate() -> Result<Vec<String>, AppError> {
+        let indexes = Self::create_indexes(&vec![
             IndexModel::builder()
                 .keys(doc! { "payload": 1, "created_at": -1 })
                 .build(),
@@ -46,5 +42,7 @@ impl Record {
                 .build(),
         ])
         .await
+        .map_err(AppError::internal_server_error)?;
+        Ok(indexes.index_names)
     }
 }

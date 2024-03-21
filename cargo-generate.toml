@@ -1,0 +1,12 @@
+[template]
+ignore = [
+	".git",
+	"cargo-generate.toml",
+	".sst",
+	"node_modules",
+	"target",
+	".env",
+]
+
+[placeholders]
+app_name = { prompt = "Enter the name of your AWS app", default = "sst_template", type = "string" }

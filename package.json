@@ -1,5 +1,5 @@
 {
-  "name": "aws-sst-template",
+  "name": "{{app_name}}",
   "version": "0.0.0",
   "private": true,
   "type": "module",

@@ -1,50 +1,46 @@
-use lambda_web::actix_web::{web, HttpResponse};
-use mongoose::{
-    bson::{doc, DateTime},
-    types::ListOptions,
-    Model,
-};
+use axum::{extract::Path, http::StatusCode, response::IntoResponse, Json};
+use mongoose::{doc, types::ListOptions, DateTime, Model};
 use serde::Serialize;
 
 use crate::{
-    config::{self, Env, Stage},
-    errors::{ApiResponse, AppResponse},
+    config::{Env, Stage},
+    errors::AppError,
     models::record::Record,
 };
 
 #[derive(Serialize)]
 struct PingMessage {
     stage: Stage,
-    region: String,
 }
 
-pub async fn ping() -> AppResponse {
-    let Env { stage, region, .. } = config::Env::new()?;
-    Ok(HttpResponse::Ok().json(PingMessage { stage, region }))
+pub async fn ping() -> Result<impl IntoResponse, AppError> {
+    let Env { stage, .. } = Env::new().map_err(AppError::env_error)?;
+    Ok(Json(PingMessage { stage }))
 }
 
-pub async fn create_record() -> ApiResponse {
+pub async fn create_record() -> Result<impl IntoResponse, AppError> {
     let now = DateTime::now();
     let new_record = Record {
         payload: format!("request received: {now}"),
         ..Default::default()
     };
-    Ok(HttpResponse::Created().json(new_record.save().await?))
+    Ok((StatusCode::CREATED, Json(new_record.save().await)))
 }
 
-pub async fn read_record(id: web::Path<String>) -> ApiResponse {
-    let record = Record::read_by_id(&id).await?;
-    Ok(HttpResponse::Ok().json(record))
+pub async fn read_record(Path(id): Path<String>) -> Result<impl IntoResponse, AppError> {
+    let record = Record::read_by_id(&id).await.map_err(AppError::not_found)?;
+    Ok(Json(record))
 }
 
-pub async fn list_records() -> ApiResponse {
+pub async fn list_records() -> Result<impl IntoResponse, AppError> {
     let records = Record::list(
-        None,
-        Some(ListOptions {
-            sort: Some(doc! { "created_at": -1 }),
+        Default::default(),
+        ListOptions {
+            sort: doc! { "created_at": -1 },
             ..Default::default()
-        }),
+        },
     )
-    .await?;
-    Ok(HttpResponse::Ok().json(records))
+    .await
+    .map_err(AppError::not_found)?;
+    Ok(Json(records))
 }

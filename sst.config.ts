@@ -4,12 +4,10 @@ import { Function, type StackContext } from 'sst/constructs'
 function ApiStack({ stack }: StackContext) {
 	const api = new Function(stack, 'api', {
 		handler: 'src/bin/handlers/api.rs',
-		url: { cors: true },
-		logRetention: 'one_week'
+		url: { cors: true }
 	})
 	new Function(stack, 'simple-function', {
 		handler: 'src/bin/handlers/simple-function.rs',
-		logRetention: 'one_week'
 	})
 	stack.addOutputs({ url: api.url })
 }
@@ -17,7 +15,7 @@ function ApiStack({ stack }: StackContext) {
 export default {
 	config(_input) {
 		return {
-			name: 'aws-sst-template',
+			name: '{{app_name}}',
 			region: 'us-east-1',
 		}
 	},
@@ -26,7 +24,8 @@ export default {
 			runtime: 'rust',
 			architecture: 'arm_64',
 			memorySize: '2048 MB',
-			timeout: 28,
+			timeout: 10,
+			logRetention: 'one_week',
 			environment: {
 				STAGE: app.stage,
 				REGION: app.region,

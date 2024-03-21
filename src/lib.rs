@@ -2,8 +2,6 @@ pub mod controllers;
 pub mod models;
 
 pub mod config {
-    use std::env::VarError;
-
     use serde::{Deserialize, Serialize};
     use tracing::Level;
 
@@ -20,135 +18,113 @@ pub mod config {
     #[derive(Debug)]
     pub struct Env {
         pub stage: Stage,
-        pub region: String,
         pub log_level: Level,
         pub mongo_uri: String,
     }
 
     impl Env {
-        pub fn _init() -> Result<Self, VarError> {
+        fn _get_required_string(key: &str) -> String {
+            match std::env::var(key.trim().to_uppercase()) {
+                Ok(value) => value,
+                Err(err) => {
+                    eprintln!("{key} not found: {err}");
+                    std::process::exit(1);
+                }
+            }
+        }
+
+        pub fn new() -> Result<Self, AppError> {
             if cfg!(debug_assertions) {
                 use dotenv::dotenv;
                 dotenv().ok();
             }
-            Ok(Self {
-                stage: match std::env::var("STAGE")?.to_uppercase().as_str() {
+            let env = Self {
+                stage: match Self::_get_required_string("STAGE").to_uppercase().as_str() {
                     "LOCAL" => Stage::Local,
                     "PROD" => Stage::Prod,
                     "TEST" => Stage::Test,
                     other => Stage::Other(other.to_string()),
                 },
-                region: std::env::var("REGION")?,
-                log_level: match std::env::var("LOG_LEVEL")?.to_uppercase().as_str() {
+                log_level: match Self::_get_required_string("LOG_LEVEL")
+                    .to_uppercase()
+                    .as_str()
+                {
                     "DEBUG" => Level::DEBUG,
                     "INFO" => Level::INFO,
                     "WARN" => Level::WARN,
                     _ => Level::ERROR,
                 },
-                mongo_uri: std::env::var("MONGO_URI")?,
-            })
-        }
-
-        pub fn new() -> Result<Self, AppError> {
-            match Self::_init() {
-                Ok(env) => Ok(env),
-                Err(err) => {
-                    eprintln!("error initializing env: {err:?}");
-                    Err(AppError::InternalServerError {
-                        error: Some(err.to_string()),
-                    })
-                }
-            }
+                mongo_uri: Self::_get_required_string("MONGO_URI"),
+            };
+            Ok(env)
         }
     }
 }
 
 pub mod errors {
-    use std::fmt::Display;
-
-    use lambda_http::http::{HeaderValue, StatusCode};
-    use lambda_web::actix_web::{body, error, http, HttpResponse};
+    use axum::{
+        http::StatusCode,
+        response::{IntoResponse, Response},
+        Json,
+    };
+    use serde::Serialize;
     use thiserror::Error;
 
-    #[derive(Error, Debug)]
+    #[derive(Debug, Error)]
     pub enum AppError {
-        #[error("{error:?}")]
-        Unauthorized { error: Option<String> },
-        #[error("{error:?}")]
-        InternalServerError { error: Option<String> },
-        #[error("{error:?}")]
-        NotFound { error: Option<String> },
+        #[error("environment error: {0}")]
+        EnvError(String),
+        #[error("internal server error: {0}")]
+        InternalServerError(String),
+        #[error("unauthorized: {0}")]
+        Unauthorized(String),
+        #[error("bad request: {0}")]
+        BadRequest(String),
+        #[error("not found: {0}")]
+        NotFound(String),
     }
 
-    impl error::ResponseError for AppError {
-        fn status_code(&self) -> StatusCode {
-            match self {
-                Self::Unauthorized { error: _ } => StatusCode::UNAUTHORIZED,
-                Self::InternalServerError { error: _ } => StatusCode::INTERNAL_SERVER_ERROR,
-                Self::NotFound { error: _ } => StatusCode::NOT_FOUND,
-            }
+    #[allow(clippy::needless_pass_by_value)]
+    impl AppError {
+        pub fn env_error(error: impl ToString) -> Self {
+            Self::EnvError(error.to_string())
         }
 
-        fn error_response(&self) -> HttpResponse<body::BoxBody> {
-            tracing::error!("[ERROR]: {self:?}");
-            let mut res = HttpResponse::new(self.status_code());
-            res.headers_mut().insert(
-                http::header::CONTENT_TYPE,
-                HeaderValue::from_static("application/json"),
-            );
-            let message = match self {
-                Self::Unauthorized { error } => error
-                    .as_ref()
-                    .map_or("unauthorized".to_string(), std::string::ToString::to_string),
-                Self::InternalServerError { error } => error.as_ref().map_or(
-                    "internal server error".to_string(),
-                    std::string::ToString::to_string,
-                ),
-                Self::NotFound { error } => error
-                    .as_ref()
-                    .map_or("not found".to_string(), std::string::ToString::to_string),
+        pub fn unauthorized(error: impl ToString) -> Self {
+            Self::Unauthorized(error.to_string())
+        }
+
+        pub fn not_found(error: impl ToString) -> Self {
+            Self::NotFound(error.to_string())
+        }
+
+        pub fn internal_server_error(error: impl ToString) -> Self {
+            Self::InternalServerError(error.to_string())
+        }
+
+        pub fn bad_request(error: impl ToString) -> Self {
+            Self::BadRequest(error.to_string())
+        }
+    }
+
+    #[derive(Serialize)]
+    pub struct ErrorMessage {
+        pub error: String,
+    }
+
+    impl IntoResponse for AppError {
+        fn into_response(self) -> Response {
+            let status = match self {
+                Self::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+                Self::NotFound(_) => StatusCode::NOT_FOUND,
+                Self::BadRequest(_) => StatusCode::BAD_REQUEST,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
             };
-            let error_raw = format!(r#"{{"error":"{message}"}}"#);
-            res.set_body(body::BoxBody::new(error_raw))
-        }
-    }
-
-    pub type AppResponse = Result<HttpResponse, AppError>;
-
-    // THIS IS FOR MORE GENERIC ERRORS WITH ANYHOW
-    #[derive(Debug)]
-    pub struct ApiError(anyhow::Error);
-    pub type ApiResponse = Result<HttpResponse, ApiError>;
-
-    impl<E> From<E> for ApiError
-    where
-        E: Into<anyhow::Error>,
-    {
-        fn from(err: E) -> Self {
-            Self(err.into())
-        }
-    }
-
-    impl Display for ApiError {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{}", self.0)
-        }
-    }
-
-    impl error::ResponseError for ApiError {
-        fn status_code(&self) -> StatusCode {
-            StatusCode::INTERNAL_SERVER_ERROR
-        }
-
-        fn error_response(&self) -> HttpResponse<body::BoxBody> {
             tracing::error!("[ERROR]: {self:?}");
-            let mut res = HttpResponse::new(self.status_code());
-            res.headers_mut().insert(
-                http::header::CONTENT_TYPE,
-                HeaderValue::from_static("application/json"),
-            );
-            let error_raw = format!(r#"{{"error":"{self}"}}"#);
-            res.set_body(body::BoxBody::new(error_raw))
+            let error = ErrorMessage {
+                error: self.to_string(),
+            };
+            (status, Json(error)).into_response()
         }
     }
 }
@@ -157,12 +133,13 @@ pub mod logger {
     use tracing::Level;
     use tracing_subscriber::FmtSubscriber;
 
-    use crate::config;
+    use crate::{config, errors::AppError};
 
-    pub fn init() -> anyhow::Result<()> {
+    pub fn init() -> Result<(), AppError> {
         let log_level = config::Env::new().map_or(Level::ERROR, |e| e.log_level);
         let subscriber = FmtSubscriber::builder().with_max_level(log_level).finish();
-        tracing::subscriber::set_global_default(subscriber)?;
+        tracing::subscriber::set_global_default(subscriber)
+            .map_err(AppError::internal_server_error)?;
         Ok(())
     }
 }

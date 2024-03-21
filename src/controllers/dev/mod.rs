@@ -1,10 +1,11 @@
-use lambda_web::actix_web::web::{self, ServiceConfig};
+use axum::routing::{get, post};
 
 mod controller;
 
-pub fn router(cfg: &mut ServiceConfig) {
-    cfg.route("/ping", web::get().to(controller::ping));
-    cfg.route("/records", web::post().to(controller::create_record));
-    cfg.route("/records", web::get().to(controller::list_records));
-    cfg.route("/records/{id}", web::get().to(controller::read_record));
+pub fn router() -> axum::Router {
+    axum::Router::new()
+        .route("/ping", get(controller::ping))
+        .route("/records", post(controller::create_record))
+        .route("/records", get(controller::list_records))
+        .route("/records/:id", get(controller::read_record))
 }

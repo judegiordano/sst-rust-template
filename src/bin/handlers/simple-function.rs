@@ -1,20 +1,19 @@
-use anyhow::Result;
-use lambda_runtime::{run, service_fn, LambdaEvent};
+use awwsy::lambda_runtime::{run, service_fn, Error, LambdaEvent};
+use {{app_name}}::{errors::AppError, logger};
 use serde::{Deserialize, Serialize};
-use sst_example::logger;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct ExamplePayload {
     payload: String,
 }
 
-async fn handler(event: LambdaEvent<ExamplePayload>) -> Result<()> {
+async fn handler(event: LambdaEvent<ExamplePayload>) -> Result<(), AppError> {
     tracing::info!("request received: {:?}", event);
     Ok(())
 }
 
 #[tokio::main]
-pub async fn main() -> Result<(), lambda_http::Error> {
+pub async fn main() -> Result<(), Error> {
     logger::init()?;
     run(service_fn(handler)).await
 }
