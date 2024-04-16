@@ -9,4 +9,5 @@ ignore = [
 ]
 
 [placeholders]
-app_name = { prompt = "Enter the name of your AWS app", default = "sst_template", type = "string" }
+app_name = { prompt = "Enter the name of your AWS app", default = "sst-template", type = "string" }
+crate_name = { prompt = "Enter the name of your Rust app", default = "aws_api", type = "string" }

@@ -1,5 +1,5 @@
 use awwsy::lambda_runtime::Error;
-use {{app_name}}::{controllers::routes, logger};
+use {{crate_name}}::{controllers::routes, logger};
 
 #[tokio::main]
 pub async fn main() -> Result<(), Error> {

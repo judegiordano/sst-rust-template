@@ -23,8 +23,8 @@ export default {
 		app.setDefaultFunctionProps({
 			runtime: 'rust',
 			architecture: 'arm_64',
-			memorySize: '2048 MB',
-			timeout: 10,
+			memorySize: '1024 MB',
+			timeout: '5 minutes',
 			logRetention: 'one_week',
 			environment: {
 				STAGE: app.stage,
