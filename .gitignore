@@ -15,3 +15,5 @@ node_modules
 !template.env
 
 target
+
+Cargo.lock

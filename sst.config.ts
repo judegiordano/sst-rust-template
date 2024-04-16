@@ -15,7 +15,7 @@ function ApiStack({ stack }: StackContext) {
 export default {
 	config(_input) {
 		return {
-			name: '{{app_name}}',
+			name: '{{aws_name}}',
 			region: 'us-east-1',
 		}
 	},

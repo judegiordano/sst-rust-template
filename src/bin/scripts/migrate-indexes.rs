@@ -1,4 +1,4 @@
-use {{crate_name}}::{errors::AppError, logger, models::record::Record};
+use {{app_name}}::{errors::AppError, logger, models::record::Record};
 
 #[tokio::main]
 pub async fn main() -> Result<(), AppError> {

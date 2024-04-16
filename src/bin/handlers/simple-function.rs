@@ -1,5 +1,5 @@
 use awwsy::lambda_runtime::{run, service_fn, Error, LambdaEvent};
-use {{crate_name}}::{errors::AppError, logger};
+use {{app_name}}::{errors::AppError, logger};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
